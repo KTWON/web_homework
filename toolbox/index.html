@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>數據檢驗工具箱</title>
+<meta name="description" content="以統計方法檢驗資料特性的線上工具集，目前提供班佛定律（Benford's Law）第一、第二定律檢驗器。">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@600;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#f5f6f2; --surface:#ffffff; --ink:#18202e; --muted:#5a6272; --rule:#d8dcd3; --rule-strong:#b9bfb3;
+  --theory:#2c6b58; --band:#b8901a;
+  --loggrid:none; --grid:rgba(24,32,46,.06); --glow:rgba(44,107,88,.14); --glow2:rgba(184,144,26,.12);
+  --serif:"Noto Serif TC","Songti TC","PMingLiU",serif;
+  --sans:"Noto Sans TC","PingFang TC","Microsoft JhengHei","Heiti TC",system-ui,sans-serif;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --paper:#11151c; --surface:#181d26; --ink:#e7eaef; --muted:#9aa3b2; --rule:#2a313d; --rule-strong:#3a4250;
+    --theory:#5fb79c; --band:#dcb847;
+    --grid:rgba(231,234,239,.05); --glow:rgba(95,183,156,.12); --glow2:rgba(220,184,71,.08);
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#11151c; --surface:#181d26; --ink:#e7eaef; --muted:#9aa3b2; --rule:#2a313d; --rule-strong:#3a4250;
+  --theory:#5fb79c; --band:#dcb847;
+  --grid:rgba(231,234,239,.05); --glow:rgba(95,183,156,.12); --glow2:rgba(220,184,71,.08);
+}
+*,*::before,*::after{box-sizing:inherit}
+html{height:100%}
+body{
+  margin:0;min-height:100vh;color:var(--ink);font-family:var(--sans);line-height:1.75;-webkit-font-smoothing:antialiased;
+  background-color:var(--paper);
+  /* 背景：兩團柔和光暈 + 對數刻度格線（每一格的間距依 log10 排列，呼應班佛定律） */
+  background-image:
+    radial-gradient(60rem 40rem at 105% -10%, var(--glow), transparent 60%),
+    radial-gradient(50rem 36rem at -10% 110%, var(--glow2), transparent 60%),
+    var(--loggrid);
+  background-attachment:fixed,fixed,fixed;
+}
+a{color:inherit}
+:focus-visible{outline:2px solid var(--theory);outline-offset:3px}
+
+.wrap{max-width:1080px;margin:0 auto;padding:0 24px}
+header.top{display:flex;justify-content:space-between;align-items:center;padding:22px 0}
+.brand{font-family:var(--serif);font-weight:900;font-size:1.1rem;text-decoration:none;letter-spacing:.04em}
+.brand span{color:var(--theory)}
+header.top nav a{font-size:.9rem;color:var(--muted);text-decoration:none;margin-left:20px}
+header.top nav a:hover{color:var(--ink)}
+
+.hero{padding:72px 0 56px}
+.hero h1{font-family:var(--serif);font-weight:900;font-size:clamp(2.4rem,6vw,4rem);line-height:1.2;margin:0;letter-spacing:.02em}
+.hero h1 em{font-style:normal;color:var(--theory)}
+.hero p{max-width:34em;color:var(--muted);font-size:1.08rem;margin:20px 0 0}
+
+h2{font-family:var(--serif);font-weight:600;font-size:1.3rem;margin:0 0 18px;display:flex;align-items:baseline;gap:12px}
+h2 small{font-family:var(--sans);font-size:.85rem;color:var(--muted);font-weight:400}
+
+.tools{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px;padding-bottom:72px}
+.card{position:relative;display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--rule-strong);border-radius:12px;padding:22px 22px 20px;text-decoration:none;min-height:250px;transition:border-color .15s,transform .15s}
+a.card:hover{border-color:var(--theory);transform:translateY(-2px)}
+@media (prefers-reduced-motion:reduce){a.card:hover{transform:none}}
+.card .tag{align-self:flex-start;font-size:.75rem;color:var(--theory);border:1px solid currentColor;border-radius:99px;padding:0 10px;line-height:1.8}
+.card h3{font-family:var(--serif);font-weight:900;font-size:1.35rem;margin:14px 0 6px;line-height:1.35}
+.card p{margin:0;color:var(--muted);font-size:.92rem}
+.card .go{margin-top:auto;padding-top:16px;font-weight:500;color:var(--theory)}
+.mini{display:flex;height:34px;border:1px solid var(--ink);border-radius:3px;overflow:hidden;margin-top:16px}
+.mini i{display:block;border-right:1px solid var(--ink);font-style:normal;font-family:var(--serif);font-weight:900;font-size:.8rem;padding:2px 0 0 4px;line-height:1.2}
+.mini i:last-child{border-right:0}
+.card.soon{min-height:160px;background:transparent;border-style:dashed;align-items:flex-start;justify-content:center;color:var(--muted)}
+.card.soon h3{color:var(--muted);font-size:1.15rem}
+.card.soon .plus{font-family:var(--serif);font-size:2rem;line-height:1;color:var(--rule-strong)}
+
+footer{border-top:1px solid var(--rule);padding:22px 0 36px;font-size:.82rem;color:var(--muted);display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <a class="brand" href="./">數據檢驗<span>工具箱</span></a>
+    <nav><a href="#tools">工具</a><a href="#about">關於</a></nav>
+  </header>
+
+  <section class="hero">
+    <h1>讓數字自己<br><em>說出它的來歷</em></h1>
+    <p>一組以統計方法檢驗資料特性的線上工具。所有計算都在你的瀏覽器中完成，上傳的檔案不會離開你的電腦。</p>
+  </section>
+
+  <section id="tools">
+    <h2>工具 <small id="toolCount"></small></h2>
+    <div class="tools" id="toolGrid"></div>
+  </section>
+
+  <footer id="about">
+    <span>數據檢驗工具箱，以 GitHub Pages 架設。</span>
+    <span id="year"></span>
+  </footer>
+</div>
+
+<script>
+/* =====================================================================
+   工具清單：新增工具時，只要在這個陣列加一筆即可。
+   - href：工具頁面的相對路徑（建議每個工具放在自己的資料夾，例如 newtool/index.html → "newtool/"）
+   - visual："benford" 會顯示首位數刻度圖示；不填則不顯示圖示
+   預留位置（虛線卡片）會自動補上，數量由 PLACEHOLDERS 控制。
+   ===================================================================== */
+const TOOLS = [
+  {
+    title: '班佛定律檢驗器',
+    tag: '統計檢定',
+    desc: '上傳 CSV 或 Excel，檢驗數據的第一位數與第二位數是否符合班佛定律，並產出適用性檢查、異常位數與分析報告。',
+    href: 'benford/',
+    visual: 'benford'
+  }
+  // ,{ title:'新工具名稱', tag:'分類', desc:'一句話說明', href:'newtool/' }
+];
+const PLACEHOLDERS = 2;
+
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function benfordMini(){
+  return '<div class="mini" aria-hidden="true">' + [1,2,3,4,5,6,7,8,9].map(d => {
+    const p = Math.log10(1 + 1/d);
+    return `<i style="width:${p*100}%;background:color-mix(in srgb,var(--theory) ${58-(d-1)*6}%,var(--surface))">${d<=5?d:''}</i>`;
+  }).join('') + '</div>';
+}
+const grid = document.getElementById('toolGrid');
+grid.innerHTML =
+  TOOLS.map(t => `
+    <a class="card" href="${esc(t.href)}">
+      <span class="tag">${esc(t.tag)}</span>
+      <h3>${esc(t.title)}</h3>
+      <p>${esc(t.desc)}</p>
+      ${t.visual === 'benford' ? benfordMini() : ''}
+      <span class="go">開啟工具 →</span>
+    </a>`).join('') +
+  Array.from({length: PLACEHOLDERS}, () => `
+    <div class="card soon" aria-label="預留位置">
+      <span class="plus">＋</span>
+      <h3>新工具即將推出</h3>
+      <p>更多資料檢驗工具陸續開發中。</p>
+    </div>`).join('');
+document.getElementById('toolCount').textContent = `共 ${TOOLS.length} 項`;
+document.getElementById('year').textContent = '© ' + new Date().getFullYear();
+
+/* 對數刻度背景：每 10 倍為一格，內部 2–9 的線依 log10 位置排列 */
+(function(){
+  const color = getComputedStyle(document.documentElement).getPropertyValue('--grid').trim() || 'rgba(0,0,0,.06)';
+  const W = 280, lines = [];
+  for (let d = 1; d <= 9; d++) {
+    const x = (Math.log10(d) * W).toFixed(1);
+    lines.push(`<line x1='${x}' y1='0' x2='${x}' y2='400' stroke='${color}' stroke-width='${d===1?1.4:0.8}'/>`);
+  }
+  lines.push(`<line x1='0' y1='0' x2='${W}' y2='0' stroke='${color}' stroke-width='0.8'/>`);
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='${W}' height='400'>${lines.join('')}</svg>`;
+  document.documentElement.style.setProperty('--loggrid', `url("data:image/svg+xml,${encodeURIComponent(svg)}")`);
+})();
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => location.reload());
+</script>
+</body>
+</html>
